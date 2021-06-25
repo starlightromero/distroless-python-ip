@@ -1,0 +1,24 @@
+FROM python:3.9-buster as build
+
+WORKDIR /usr/src/app
+
+RUN apt-get -qq update && \
+    apt-get -qqy --no-install-recommends install binutils=2.31.1-16
+
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir --upgrade pip==21.1.2 && \
+    pip install --no-cache-dir -r requirements.txt &&  \
+    pip install --no-cache-dir pyinstaller==4.3
+
+COPY . .
+
+RUN pyinstaller app.py
+
+FROM gcr.io/distroless/python3:nonroot
+
+WORKDIR /usr/src/app
+
+COPY --from=build /usr/src/app/dist ./dist
+
+ENTRYPOINT [ "dist/app/app" ]
